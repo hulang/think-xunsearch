@@ -1,0 +1,43 @@
+{
+    "name": "hulang/think-xunsearch",
+    "description": "ThinkPHP 风格的迅搜(xunsearch)全文检索封装包：索引增删改、检索、分页排序、高亮与搜索建议。",
+    "keywords": [
+        "xunsearch",
+        "迅搜",
+        "全文检索",
+        "search",
+        "scws",
+        "xapian",
+        "thinkphp"
+    ],
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "hulang",
+            "email": "hulangfy@163.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.0.0",
+        "topthink/framework": "^8.0",
+        "hightman/xunsearch": "*@beta"
+    },
+    "autoload": {
+        "psr-4": {
+            "think\\": "src/"
+        }
+    },
+    "scripts": {
+        "test": "php test/run.php"
+    },
+    "extra": {
+        "think": {
+            "services": [
+                "think\\xunsearch\\Service"
+            ],
+            "config": {
+                "xunsearch": "config/config.php"
+            }
+        }
+    }
+}

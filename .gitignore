@@ -1,0 +1,15 @@
+# Composer 依赖
+/vendor/
+composer.lock
+
+# 运行时与日志
+/runtime/
+*.log
+
+# 临时文件
+*.tmp
+*.cache
+
+# IDE
+.idea/
+.vscode/
