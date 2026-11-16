@@ -14,7 +14,8 @@ ThinkPHP 风格的迅搜（xunsearch）全文检索封装包。在官方 PHP SDK
 
 ## 环境要求
 
-- PHP ^8.0（基线 8.0，兼容 8.0 / 8.1 / 8.2 / 8.3；需 `mbstring`、`json`、`iconv` 扩展）。
+- PHP >= 8.0（基线 8.0）。
+- PHP 扩展：`mbstring`（官方 SDK 声明的必需扩展）；字符集转换在 `mbstring` / `iconv` 中二选一即可，非 UTF-8 数据环境需确保至少开启其一；`pcre` 为 PHP 内置默认扩展，无需额外安装。
 - 官方 SDK：`hightman/xunsearch`（composer 依赖，版本约束 `*@beta`）。
 - **xunsearch 后端服务需单独安装并启动**：后端为 C/C++ 实现（Xapian + SCWS 分词），本包只是 PHP 客户端封装，**不能替代后端**。每个搜索项目需一份 `.ini` 配置（字段、分词、权重等），可由官方 `util/IniWizzaard` 生成。
 

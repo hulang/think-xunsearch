@@ -18,7 +18,8 @@
         }
     ],
     "require": {
-        "php": "^8.0",
+        "php": ">=8.0",
+        "ext-mbstring": "*",
         "topthink/framework": "^8.0",
         "topthink/think-orm": "^3.0|^4.0",
         "hightman/xunsearch": "*@beta"
