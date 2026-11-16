@@ -14,9 +14,12 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 require $root . '/src/xunsearch/contract/XsFactory.php';
 require $root . '/src/xunsearch/service/XunsearchService.php';
+require $root . '/src/xunsearch/sync/IndexSynchronizer.php';
+require $root . '/src/xunsearch/sync/ModelSyncTrait.php';
 
 use think\xunsearch\contract\XsFactory;
 use think\xunsearch\service\XunsearchService;
+use think\xunsearch\sync\IndexSynchronizer;
 
 $fail = 0;
 $total = 0;
@@ -237,6 +240,29 @@ check('hot 调用 getHotQuery 并透传条数/类型', $search->hotResult === [1
 // 9. 高亮透传字段值
 $highlighted = $service->highlight('标题一');
 check('highlight 调用 search->highlight 并返回处理结果', $search->highlightResult === '标题一' && strpos($highlighted, '<b>') === 0);
+
+// 10. 模型索引同步器路由
+$syncFactory = new StubFactory();
+$syncService = new XunsearchService($syncFactory, ['index' => ['auto_flush' => false]]);
+$synchronizer = new IndexSynchronizer($syncService);
+
+class StubModel
+{
+    public $id = 7;
+    public $title = '模型标题';
+    public $content = '模型正文';
+}
+
+$model = new StubModel();
+$synchronizer->sync($model, ['title', 'content'], 'id');
+$syncIndex = $syncFactory->xsPool['demo']->index;
+check('同步器 sync 调用索引 update 并透传主键与字段', count($syncIndex->updateDocs) === 1 && $syncIndex->updateDocs[0]->fields === ['id' => 7, 'title' => '模型标题', 'content' => '模型正文']);
+
+$synchronizer->remove(7, 'id');
+check('同步器 remove 调用索引 delete 并透传主键/字段', $syncIndex->delCalls === [[7, 'id']]);
+
+$doc = $synchronizer->document($model, ['title'], 'id');
+check('document 提取主键与指定字段', $doc === ['id' => 7, 'title' => '模型标题']);
 
 echo "\n契约测试共 {$total} 项，失败 {$fail} 项。\n";
 exit($fail > 0 ? 1 : 0);

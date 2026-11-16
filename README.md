@@ -9,6 +9,7 @@ ThinkPHP 风格的迅搜（xunsearch）全文检索封装包。在官方 PHP SDK
 - 词项：`related` 相关搜索词、`hot` 热门搜索词、`suggest` 搜索建议（前缀展开）。
 - 多项目：`default_project` 默认项目，`projects` 映射表支持按标识切换不同 ini 项目。
 - TP8 接入：提供 `think\Xunsearch` 门面、容器服务自动绑定与 `xunsearch:clear` / `xunsearch:reindex` 命令骨架。
+- 模型同步：提供框架无关的索引同步器与 `ModelSyncTrait`，模型保存 / 删除后可自动或手动同步索引。
 - 可测试：底层客户端经 `XsFactory` 接口创建，离线测试可注入 mock，无需连接真实后端。
 
 ## 环境要求
@@ -102,7 +103,55 @@ php think xunsearch:clear --project=cms
 php think xunsearch:reindex --project=cms
 ```
 
-> 模型 AR 写入时自动同步索引、后台搜索词 / 热词管理、前台检索模板属于后续规划项，本包当前不含。
+### 模型自动同步索引
+
+在业务模型中引入 `ModelSyncTrait`，覆盖 `$xunsearch` 配置，保存 / 删除后调用同步方法：
+
+```php
+use think\xunsearch\sync\ModelSyncTrait;
+
+class Article extends \think\Model
+{
+    use ModelSyncTrait;
+
+    protected $xunsearch = [
+        'project' => 'cms',                 // 项目标识，空取默认项目
+        'key'     => 'id',                  // 主键字段
+        'fields'  => ['title', 'content'], // 写入索引的字段
+    ];
+
+    // 示例：在模型自己的保存 / 删除钩子里触发
+    public function afterWrite()
+    {
+        $this->syncToIndex();
+    }
+
+    public function afterDelete()
+    {
+        $this->removeFromIndex();
+    }
+}
+```
+
+也可以不挂事件，在业务代码里手动调用：
+
+```php
+$article->save();
+$article->syncToIndex();   // 写入 / 更新索引
+
+$article->delete();
+$article->removeFromIndex(); // 删除索引文档
+```
+
+底层 `IndexSynchronizer` 框架无关，可脱离模型直接使用：
+
+```php
+$synchronizer = new \think\xunsearch\sync\IndexSynchronizer($service);
+$synchronizer->sync($model, ['title', 'content'], 'id');
+$synchronizer->remove($id, 'id');
+```
+
+> 后台搜索词 / 热词管理界面、前台检索结果模板属于后续规划项，本包当前不含。
 
 ## 索引操作
 
@@ -155,8 +204,11 @@ php test/run.php
 [PASS] related 调用 getRelatedQuery 并透传词/条数
 [PASS] hot 调用 getHotQuery 并透传条数/类型
 [PASS] highlight 调用 search->highlight 并返回处理结果
+[PASS] 同步器 sync 调用索引 update 并透传主键与字段
+[PASS] 同步器 remove 调用索引 delete 并透传主键/字段
+[PASS] document 提取主键与指定字段
 
-契约测试共 17 项，失败 0 项。
+契约测试共 20 项，失败 0 项。
 ```
 
 > 说明：以上为封装层路由契约校验，**不代表真实后端的检索命中结果**。在装有 xunsearch 后端并已建索引的环境中，命中条数、高亮词、建议词等以实际后端返回为准。
@@ -173,6 +225,9 @@ think-xunsearch/
 │       ├── contract/XsFactory.php         # 客户端工厂接口
 │       ├── factory/SdkFactory.php         # 官方 SDK 默认工厂
 │       ├── service/XunsearchService.php   # 索引 / 检索门面服务
+│       ├── sync/
+│       │   ├── IndexSynchronizer.php     # 模型索引同步器
+│       │   └── ModelSyncTrait.php        # 模型同步 Trait
 │       └── command/
 │           ├── ClearCommand.php          # 清空索引命令骨架
 │           └── ReindexCommand.php         # 重建索引命令骨架
